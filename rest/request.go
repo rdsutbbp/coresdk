@@ -1,11 +1,15 @@
 package rest
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
-	"net/url"
+	"reflect"
 	"time"
 )
 
@@ -15,12 +19,11 @@ import (
 type Request struct {
 	c *RESTClient
 
-	timeout    time.Duration
-	maxRetries int
+	verb string
 
-	verb    string
-	headers http.Header
-	params  url.Values
+	subPath string
+
+	params string
 
 	// output
 	err  error
@@ -28,25 +31,10 @@ type Request struct {
 }
 
 func NewRequest(c *RESTClient) *Request {
-	var timeout time.Duration
-	if c.Client != nil {
-		timeout = c.Client.Timeout
-	}
-	r := &Request{
-		c:          c,
-		timeout:    timeout,
-		maxRetries: 10,
-	}
-	return r
-}
 
-// Timeout makes the request use the given duration as an overall timeout for the
-// request. Additionally, if set passes the value as "timeout" parameter in URL.
-func (r *Request) Timeout(d time.Duration) *Request {
-	if r.err != nil {
-		return r
+	r := &Request{
+		c: c,
 	}
-	r.timeout = d
 	return r
 }
 
@@ -55,60 +43,61 @@ func (r *Request) Verb(verb string) *Request {
 	return r
 }
 
-func (r *Request) SetHeader(key string, values ...string) *Request {
-	if r.headers == nil {
-		r.headers = http.Header{}
-	}
-	r.headers.Del(key)
-	for _, value := range values {
-		r.headers.Add(key, value)
-	}
+// SubPath set subPath
+// e.g. /api/v1/credential/init
+func (r *Request) SubPath(subPath string) *Request {
+	r.subPath = subPath
 	return r
 }
 
-func (r *Request) MaxRetries(maxRetries int) *Request {
-	if maxRetries < 0 {
-		maxRetries = 0
-	}
-	r.maxRetries = maxRetries
+func (r *Request) Params(params string) *Request {
+	r.params = params
 	return r
 }
 
-// Param creates a query parameter with the given string value.
-func (r *Request) Param(paramName, s string) *Request {
-	if r.err != nil {
-		return r
+// url get url for request
+func (r *Request) url() string {
+	if r.params == "" {
+		r.params = fmt.Sprintf("?DelegationUUID=%s&LifeCycleUUID=%s", r.c.delegationUUID, r.c.lifeCycleUUID)
 	}
-	return r.setParam(paramName, s)
-}
-
-func (r *Request) setParam(paramName, value string) *Request {
-	if r.params == nil {
-		r.params = make(url.Values)
-	}
-	r.params[paramName] = append(r.params[paramName], value)
-	return r
+	return fmt.Sprintf("%s://%s:%s", r.c.protocol, r.c.addr, r.c.port+r.subPath+r.params)
 }
 
 // Body makes the request use obj as the body. Optional.
 // If obj is a string, try to read a file of that name.
 // If obj is a []byte, send it directly.
-// If obj is an io.Reader, use it directly.
-// If obj is a runtime.Object, marshal it correctly, and set Content-Type header.
-// If obj is a runtime.Object and nil, do nothing.
-func (r *Request) Body(obj interface{}) {}
+// default marshal it
+func (r *Request) Body(obj interface{}) *Request {
+	if r.err != nil {
+		return r
+	}
 
-// DoRaw executes the request but does not process the response body.
-func (r *Request) DoRaw(ctx context.Context) ([]byte, error) {
-	return nil, nil
+	switch t := obj.(type) {
+	case string:
+		data, err := ioutil.ReadFile(t)
+		if err != nil {
+			r.err = err
+			return r
+		}
+		r.body = bytes.NewReader(data)
+	case []byte:
+		r.body = bytes.NewReader(t)
+	default:
+		data, err := json.Marshal(obj)
+		if err != nil {
+			r.err = err
+			return r
+		}
+		r.body = bytes.NewReader(data)
+	}
+	return r
 }
 
 // Result contains the result of calling Request.Do().
 type Result struct {
-	body        []byte
-	contentType string
-	err         error
-	statusCode  int
+	body       []byte
+	err        error
+	statusCode int
 }
 
 // Do format and executes the request. Returns a Result object for easy response
@@ -116,19 +105,64 @@ type Result struct {
 //
 // Error type:
 //  * http.Client.Do errors are returned directly.
-func (r *Request) Do() Result {
-	fmt.Println(r.c.addr)
-	return Result{}
+func (r *Request) Do(ctx context.Context) Result {
+	request, err := http.NewRequestWithContext(ctx, "POST", r.url(), r.body)
+	if err != nil {
+		return Result{err: err}
+	}
+
+	request.Header = r.c.headers
+
+	client := http.DefaultClient
+
+	var rawResp *http.Response
+	// if meet error, retry times that you set
+	for k := 0; k < r.c.retryTimes; k++ {
+		rawResp, err = doRequest(client, request)
+		if err != nil {
+			// sleep retry delay
+			time.Sleep(r.c.retryDelay)
+			continue
+		}
+		break
+	}
+
+	if rawResp == nil {
+		return Result{err: err}
+	}
+
+	data, err := ioutil.ReadAll(rawResp.Body)
+	if err != nil {
+		return Result{err: err, statusCode: rawResp.StatusCode}
+	}
+	return Result{
+		body:       data,
+		err:        nil,
+		statusCode: rawResp.StatusCode,
+	}
 }
 
-// Raw returns the raw result.
-func (r Result) Raw() ([]byte, error) {
-	return r.body, r.err
+func doRequest(client *http.Client, request *http.Request) (*http.Response, error) {
+	res, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		return nil, errors.New("response is nil")
+	}
+	defer res.Body.Close()
+	return res, nil
 }
 
 // Into stores the result into obj, if possible. If obj is nil it is ignored.
-func (r Result) Into() (interface{}, error) {
-	return nil, nil
+func (r Result) Into(obj interface{}) error {
+	if r.err != nil {
+		return r.err
+	}
+	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
+		return errors.New("object is not a ptr")
+	}
+	return json.Unmarshal(r.body, obj)
 }
 
 // StatusCode returns the HTTP status code of the request. (Only valid if no

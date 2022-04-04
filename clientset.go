@@ -6,14 +6,14 @@ import (
 )
 
 type Clientset struct {
-	driverV1 *delegationv1.DelegationV1Client
+	delegationV1 *delegationv1.DelegationV1Client
 
 	// add other client
 	// e.g. envClient CoreEnvV1Client
 }
 
 func (c *Clientset) DelegationV1() delegationv1.DelegationV1Interface {
-	return c.driverV1
+	return c.delegationV1
 }
 
 func NewClientWithOptions(ops ...rest.Opt) (*Clientset, error) {
@@ -26,7 +26,7 @@ func NewClientWithOptions(ops ...rest.Opt) (*Clientset, error) {
 	configShallowCopy := *c
 	var cs Clientset
 	var err error
-	cs.driverV1, err = delegationv1.NewForConfig(&configShallowCopy)
+	cs.delegationV1, err = delegationv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}

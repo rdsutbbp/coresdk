@@ -1,22 +1,18 @@
 package v1
 
-import "github.com/rdsutbbp/coresdk/rest"
+import (
+	"fmt"
 
-type CoreCredential struct {
-	ID       int
-	Name     string
-	Type     string
-	Version  string
-	FullData string
-	Args     string
-}
+	"github.com/rdsutbbp/coresdk/rest"
+	"golang.org/x/net/context"
+)
 
 type CredentialGetter interface {
 	Credential() CredentialInterface
 }
 
 type CredentialInterface interface {
-	Init()
+	Init(ctx context.Context, credential *CoreCredential)
 	Update()
 	UpdateStatus()
 	Query()
@@ -27,7 +23,23 @@ type credential struct {
 	client rest.Interface
 }
 
-func (c *credential) Init() {}
+type CoreCredential struct {
+	ID       int
+	Name     string
+	Type     string
+	Version  string
+	FullData string
+	Args     string
+}
+
+func (c *credential) Init(ctx context.Context, credential *CoreCredential) {
+	err := c.client.Post().
+		SubPath("/delegation/v1/credential/init").
+		Body(credential).
+		Do(ctx).
+		Into(credential)
+	fmt.Println(err)
+}
 
 func (c *credential) Update() {}
 

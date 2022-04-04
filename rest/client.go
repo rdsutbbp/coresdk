@@ -18,12 +18,18 @@ type RESTClient struct {
 	addr     string
 	port     string
 
-	timeout time.Duration
+	retryTimes int
+	retryDelay time.Duration
 
-	lifeCycleUUID string
+	delegationUUID string
+	lifeCycleUUID  string
+
+	auth *XForwardedAuthUser
+
+	headers http.Header
 
 	// Set specific behavior of the client.  If not set http.DefaultClient will be used.
-	Client *http.Client
+	client *http.Client
 }
 
 func (r *RESTClient) Verb(verb string) *Request {
@@ -42,40 +48,16 @@ func RESTClientFor(config *RESTClient) (*RESTClient, error) {
 	httpClient := &http.Client{}
 
 	rest := &RESTClient{
-		protocol:      config.protocol,
-		addr:          config.addr,
-		port:          config.port,
-		timeout:       config.timeout,
-		lifeCycleUUID: config.lifeCycleUUID,
-		Client:        httpClient,
+		protocol:       config.protocol,
+		addr:           config.addr,
+		port:           config.port,
+		retryTimes:     config.retryTimes,
+		retryDelay:     config.retryDelay,
+		delegationUUID: config.delegationUUID,
+		lifeCycleUUID:  config.lifeCycleUUID,
+		auth:           config.auth,
+		headers:        config.headers,
+		client:         httpClient,
 	}
 	return rest, nil
-}
-
-func WithProtocol(protocol string) Opt {
-	return func(c *RESTClient) error {
-		c.protocol = protocol
-		return nil
-	}
-}
-
-func WithCoreAddr(addr string) Opt {
-	return func(c *RESTClient) error {
-		c.addr = addr
-		return nil
-	}
-}
-
-func WithCoreListenPort(port string) Opt {
-	return func(c *RESTClient) error {
-		c.port = port
-		return nil
-	}
-}
-
-func WithLifeCycleUUID(lifeCycleUUID string) Opt {
-	return func(c *RESTClient) error {
-		c.lifeCycleUUID = lifeCycleUUID
-		return nil
-	}
 }
