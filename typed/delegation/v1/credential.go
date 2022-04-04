@@ -23,6 +23,12 @@ type credential struct {
 	client rest.Interface
 }
 
+func newCredential(c *DelegationV1Client) *credential {
+	return &credential{
+		client: c.RESTClient(),
+	}
+}
+
 type CoreCredential struct {
 	ID       int
 	Name     string
@@ -46,9 +52,3 @@ func (c *credential) Update() {}
 func (c *credential) Query() {}
 
 func (c *credential) UpdateStatus() {}
-
-func newCredential(c *DelegationV1Client) *credential {
-	return &credential{
-		client: c.RESTClient(),
-	}
-}
