@@ -6,6 +6,7 @@ type DelegationV1Interface interface {
 	RESTClient() rest.Interface
 
 	CredentialGetter
+	MachineGetter
 }
 
 type DelegationV1Client struct {
@@ -21,6 +22,10 @@ func (c *DelegationV1Client) RESTClient() rest.Interface {
 
 func (c *DelegationV1Client) Credential() CredentialInterface {
 	return newCredential(c)
+}
+
+func (c *DelegationV1Client) Machine() MachineInterface {
+	return newMachine(c)
 }
 
 // NewForConfig creates a new CoreV1Client for the given config.

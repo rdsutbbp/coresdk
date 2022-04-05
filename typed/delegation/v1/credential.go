@@ -1,10 +1,7 @@
 package v1
 
 import (
-	"fmt"
-
 	"github.com/rdsutbbp/coresdk/rest"
-	"golang.org/x/net/context"
 )
 
 type CredentialGetter interface {
@@ -12,7 +9,7 @@ type CredentialGetter interface {
 }
 
 type CredentialInterface interface {
-	Init(ctx context.Context, credential *CoreCredential)
+	Init()
 	Update()
 	UpdateStatus()
 	Query()
@@ -29,23 +26,7 @@ func newCredential(c *DelegationV1Client) *credential {
 	}
 }
 
-type CoreCredential struct {
-	ID       int
-	Name     string
-	Type     string
-	Version  string
-	FullData string
-	Args     string
-}
-
-func (c *credential) Init(ctx context.Context, credential *CoreCredential) {
-	err := c.client.Post().
-		SubPath("/delegation/v1/credential/init").
-		Body(credential).
-		Do(ctx).
-		Into(credential)
-	fmt.Println(err)
-}
+func (c *credential) Init() {}
 
 func (c *credential) Update() {}
 

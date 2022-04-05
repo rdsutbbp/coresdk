@@ -6,11 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bitly/go-simplejson"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/rdsutbbp/utilx/httpx"
 )
 
 // Request allows for building up a request to a server in a chained fashion.
@@ -56,11 +60,32 @@ func (r *Request) Params(params string) *Request {
 }
 
 // url get url for request
-func (r *Request) url() string {
+func (r *Request) url() (string, error) {
+	if r.c.auth != nil {
+		newLifecycleUUID, err := r.StoreAuth2LifeCycleUUID(r.c.auth)
+		if err != nil {
+			return "", err
+		}
+		r.c.lifeCycleUUID = newLifecycleUUID
+	}
 	if r.params == "" {
 		r.params = fmt.Sprintf("?DelegationUUID=%s&LifeCycleUUID=%s", r.c.delegationUUID, r.c.lifeCycleUUID)
 	}
-	return fmt.Sprintf("%s://%s:%s", r.c.protocol, r.c.addr, r.c.port+r.subPath+r.params)
+	return fmt.Sprintf("%s://%s:%s", r.c.protocol, r.c.addr, r.c.port+r.subPath+r.params), nil
+}
+
+func (r *Request) StoreAuth2LifeCycleUUID(user *XForwardedAuthUser) (string, error) {
+	// generate a new lifeCycleUUID DELEGATION-EVENT-XXX
+	lifeCycleUUID := "DELEGATION-EVENT-" + uuid.New().String()
+	// store auth to lifeCycleUUID
+	url := fmt.Sprintf("%s://%s:%s/gateway/delegation/api/v1/auth/store?LifeCycleUUID=%s", r.c.protocol, r.c.addr, r.c.port, lifeCycleUUID)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	_, err := httpx.DoPost(ctx, user, url, r.c.headers, r.c.retryTimes, r.c.retryDelay)
+	if err != nil {
+		return "", err
+	}
+	return lifeCycleUUID, nil
 }
 
 // Body makes the request use obj as the body. Optional.
@@ -106,7 +131,11 @@ type Result struct {
 // Error type:
 //  * http.Client.Do errors are returned directly.
 func (r *Request) Do(ctx context.Context) Result {
-	request, err := http.NewRequestWithContext(ctx, "POST", r.url(), r.body)
+	url, err := r.url()
+	if err != nil {
+		return Result{err: err}
+	}
+	request, err := http.NewRequestWithContext(ctx, r.verb, url, r.body)
 	if err != nil {
 		return Result{err: err}
 	}
@@ -127,11 +156,14 @@ func (r *Request) Do(ctx context.Context) Result {
 		break
 	}
 
+	defer rawResp.Body.Close()
+
 	if rawResp == nil {
 		return Result{err: err}
 	}
 
 	data, err := ioutil.ReadAll(rawResp.Body)
+
 	if err != nil {
 		return Result{err: err, statusCode: rawResp.StatusCode}
 	}
@@ -150,7 +182,6 @@ func doRequest(client *http.Client, request *http.Request) (*http.Response, erro
 	if res == nil {
 		return nil, errors.New("response is nil")
 	}
-	defer res.Body.Close()
 	return res, nil
 }
 
@@ -162,7 +193,27 @@ func (r Result) Into(obj interface{}) error {
 	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
 		return errors.New("object is not a ptr")
 	}
-	return json.Unmarshal(r.body, obj)
+
+	// parse response data
+	// code message data
+	j, err := simplejson.NewJson(r.body)
+	if err != nil {
+		return err
+	}
+	code, err := j.Get("code").Int()
+	if err != nil {
+		return err
+	}
+	if code != http.StatusOK {
+		message, _ := j.Get("message").String()
+		return fmt.Errorf(message)
+	}
+	marshalJSON, err := j.Get("data").MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(marshalJSON, obj)
 }
 
 // StatusCode returns the HTTP status code of the request. (Only valid if no
@@ -174,5 +225,5 @@ func (r Result) StatusCode(statusCode *int) Result {
 
 // Error returns the error executing the request, nil if no error occurred.
 func (r Result) Error() error {
-	return nil
+	return r.err
 }
