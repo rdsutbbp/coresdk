@@ -3,17 +3,20 @@ package coresdk
 import (
 	"github.com/rdsutbbp/coresdk/rest"
 	delegationv1 "github.com/rdsutbbp/coresdk/typed/delegation/v1"
+	miniofsv1 "github.com/rdsutbbp/coresdk/typed/miniofs/v1"
 )
 
 type Clientset struct {
 	delegationV1 *delegationv1.DelegationV1Client
-
-	// add other client
-	// e.g. envClient CoreEnvV1Client
+	miniofsV1    *miniofsv1.MiniofsV1Client
 }
 
 func (c *Clientset) DelegationV1() delegationv1.DelegationV1Interface {
 	return c.delegationV1
+}
+
+func (c *Clientset) MiniofsV1() miniofsv1.MiniofsV1Interface {
+	return c.miniofsV1
 }
 
 func NewClientWithOptions(ops ...rest.Opt) (*Clientset, error) {
@@ -27,6 +30,10 @@ func NewClientWithOptions(ops ...rest.Opt) (*Clientset, error) {
 	var cs Clientset
 	var err error
 	cs.delegationV1, err = delegationv1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	cs.miniofsV1, err = miniofsv1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}

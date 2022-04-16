@@ -3,21 +3,20 @@ module github.com/rdsutbbp/coresdk
 go 1.18
 
 require (
+	github.com/bitly/go-simplejson v0.5.0
 	github.com/google/uuid v1.3.0
 	github.com/rdsutbbp/logx v0.0.0-20220308114636-4112f6776504
-	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
+	github.com/rdsutbbp/utilx v0.0.0-20220404110717-7d940a4da59d
 )
 
 require (
 	github.com/BurntSushi/toml v1.1.0 // indirect
-	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rdsutbbp/utilx v0.0.0-20220404110717-7d940a4da59d // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

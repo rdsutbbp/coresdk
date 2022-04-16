@@ -7,6 +7,7 @@ type DelegationV1Interface interface {
 
 	CredentialGetter
 	MachineGetter
+	HostagentGetter
 }
 
 type DelegationV1Client struct {
@@ -26,6 +27,10 @@ func (c *DelegationV1Client) Credential() CredentialInterface {
 
 func (c *DelegationV1Client) Machine() MachineInterface {
 	return newMachine(c)
+}
+
+func (c *DelegationV1Client) Hostagent() HostagentInterface {
+	return newHostagent(c)
 }
 
 // NewForConfig creates a new CoreV1Client for the given config.

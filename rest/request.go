@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bitly/go-simplejson"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"time"
 
+	simplejson "github.com/bitly/go-simplejson"
 	"github.com/google/uuid"
 	"github.com/rdsutbbp/utilx/httpx"
 )
@@ -42,6 +42,10 @@ func NewRequest(c *RESTClient) *Request {
 	return r
 }
 
+func (r *Request) C() *RESTClient {
+	return r.c
+}
+
 func (r *Request) Verb(verb string) *Request {
 	r.verb = verb
 	return r
@@ -68,7 +72,7 @@ func (r *Request) url() (string, error) {
 		}
 		r.c.lifeCycleUUID = newLifecycleUUID
 	}
-	if r.params == "" {
+	if r.params == "" && r.c.delegationUUID != "" && r.c.lifeCycleUUID != "" {
 		r.params = fmt.Sprintf("?DelegationUUID=%s&LifeCycleUUID=%s", r.c.delegationUUID, r.c.lifeCycleUUID)
 	}
 	return fmt.Sprintf("%s://%s:%s", r.c.protocol, r.c.addr, r.c.port+r.subPath+r.params), nil
@@ -218,9 +222,12 @@ func (r Result) Into(obj interface{}) error {
 
 // StatusCode returns the HTTP status code of the request. (Only valid if no
 // error was returned.)
-func (r Result) StatusCode(statusCode *int) Result {
-	*statusCode = r.statusCode
-	return r
+func (r Result) StatusCode() int {
+	return r.statusCode
+}
+
+func (r Result) Body() []byte {
+	return r.body
 }
 
 // Error returns the error executing the request, nil if no error occurred.

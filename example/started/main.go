@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+
+	"github.com/rdsutbbp/logx"
+
 	"github.com/rdsutbbp/coresdk"
 	"github.com/rdsutbbp/coresdk/rest"
-	delegationv1 "github.com/rdsutbbp/coresdk/typed/delegation/v1"
-	"github.com/rdsutbbp/logx"
 )
 
 func main() {
@@ -23,23 +25,21 @@ func main() {
 		}),
 	)
 
-	init, err := config.DelegationV1().Machine().Init(context.Background(), &delegationv1.InitMachineBody{
-		NickName:     "test_nickname11",
-		HostIP:       "test_host_ip",
-		VirtualIP:    "test_virtual_ip",
-		CPU:          "test_cpu",
-		Memory:       "test_mem",
-		Disk:         "test_disk",
-		Bandwidth:    "test_bandwidth",
-		Args:         "{}",
-		SystemInfo:   "test_system",
-		FullData:     "{}",
-		CredentialID: 1,
-		Tag:          "test_tag",
-		InstallPath:  "test_install_path",
-	})
+	env, err := config.DelegationV1().Hostagent().QueryPkg(context.Background())
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	fmt.Println(init)
+	fmt.Println(env.AMD64)
+
+	bytes, err := config.MiniofsV1().Object().GetBytes(context.Background(), "delegations", "virtualbox-v1_0_9-test.tar.gz")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = ioutil.WriteFile("virtualbox-v1_0_9-test.tar.gz", bytes, 777)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
