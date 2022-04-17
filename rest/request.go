@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/rdsutbbp/utilx/httpx"
 )
 
@@ -164,6 +164,10 @@ func (r *Request) Do(ctx context.Context) Result {
 
 	if rawResp == nil {
 		return Result{err: err}
+	}
+
+	if rawResp.StatusCode != 200 {
+		return Result{err: errors.Errorf("unhealthy status code [%d]", rawResp.StatusCode)}
 	}
 
 	data, err := ioutil.ReadAll(rawResp.Body)

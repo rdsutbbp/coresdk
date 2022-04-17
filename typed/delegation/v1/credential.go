@@ -11,7 +11,6 @@ type CredentialGetter interface {
 type CredentialInterface interface {
 	Init()
 	Update()
-	UpdateStatus()
 	Query()
 	CredentialExpansion
 }
@@ -31,5 +30,3 @@ func (c *credential) Init() {}
 func (c *credential) Update() {}
 
 func (c *credential) Query() {}
-
-func (c *credential) UpdateStatus() {}

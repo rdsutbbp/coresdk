@@ -13,8 +13,7 @@ type MachineGetter interface {
 type MachineInterface interface {
 	Init(ctx context.Context, machine *CoreMachine) (*CoreMachine, error)
 	Update(ctx context.Context, machine *CoreMachine) error
-	UpdateStatus()
-	Query()
+	Query(ctx context.Context, id int32) (*CoreMachine, error)
 	MachineExpansion
 }
 
@@ -80,6 +79,17 @@ func (c *machine) Update(ctx context.Context, machine *CoreMachine) error {
 	return nil
 }
 
-func (c *machine) Query() {}
+func (c *machine) Query(ctx context.Context, id int32) (*CoreMachine, error) {
+	var resp CoreMachine
+	err := c.client.Post().
+		SubPath("/gateway/delegation/api/v1/machine/query").
+		Body(struct{ ID int32 }{ID: id}).
+		Do(ctx).
+		Into(&resp)
 
-func (c *machine) UpdateStatus() {}
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
