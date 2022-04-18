@@ -37,6 +37,7 @@ type CoreMachine struct {
 	Args         string `protobuf:"bytes,14,opt,name=Args,proto3" json:"Args,omitempty"`
 	SystemInfo   string `protobuf:"bytes,15,opt,name=SystemInfo,proto3" json:"SystemInfo,omitempty"`
 	FullData     string `protobuf:"bytes,16,opt,name=FullData,proto3" json:"FullData,omitempty"`
+	HostagentID  int32  `protobuf:"varint,17,opt,name=HostagentID,proto3" json:"HostagentID,omitempty"`
 	CredentialID int32  `protobuf:"varint,18,opt,name=CredentialID,proto3" json:"CredentialID,omitempty"`
 	HeartBeat    string `protobuf:"bytes,19,opt,name=HeartBeat,proto3" json:"HeartBeat,omitempty"`
 	Tag          string `protobuf:"bytes,20,opt,name=Tag,proto3" json:"Tag,omitempty"`
