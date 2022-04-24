@@ -42,10 +42,6 @@ func NewRequest(c *RESTClient) *Request {
 	return r
 }
 
-func (r *Request) C() *RESTClient {
-	return r.c
-}
-
 func (r *Request) Verb(verb string) *Request {
 	r.verb = verb
 	return r
@@ -71,6 +67,14 @@ func (r *Request) url() (string, error) {
 			return "", err
 		}
 		r.c.lifeCycleUUID = newLifecycleUUID
+
+		// add auth to header
+		if r.c.headers == nil {
+			r.c.headers = make(map[string][]string)
+			r.c.headers["Content-Type"] = []string{"application/json"}
+		}
+		auJson, _ := json.Marshal(r.c.auth)
+		r.c.headers["x-forwarded-auth-user"] = []string{string(auJson)}
 	}
 	if r.params == "" && r.c.delegationUUID != "" && r.c.lifeCycleUUID != "" {
 		r.params = fmt.Sprintf("?DelegationUUID=%s&LifeCycleUUID=%s", r.c.delegationUUID, r.c.lifeCycleUUID)
@@ -146,12 +150,22 @@ func (r *Request) Do(ctx context.Context) Result {
 
 	request.Header = r.c.headers
 
-	client := http.DefaultClient
+	if r.c.client == nil {
+		r.c.client = http.DefaultClient
+	}
+
+	if r.c.retryTimes == 0 {
+		r.c.retryTimes = 1
+	}
+
+	if r.c.retryDelay == 0 {
+		r.c.retryDelay = time.Duration(1) * time.Second
+	}
 
 	var rawResp *http.Response
 	// if meet error, retry times that you set
 	for k := 0; k < r.c.retryTimes; k++ {
-		rawResp, err = doRequest(client, request)
+		rawResp, err = doRequest(r.c.client, request)
 		if err != nil {
 			// sleep retry delay
 			time.Sleep(r.c.retryDelay)

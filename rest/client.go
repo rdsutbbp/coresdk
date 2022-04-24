@@ -45,8 +45,6 @@ func (r *RESTClient) Get() *Request {
 }
 
 func RESTClientFor(config *RESTClient) (*RESTClient, error) {
-	httpClient := &http.Client{}
-
 	rest := &RESTClient{
 		protocol:       config.protocol,
 		addr:           config.addr,
@@ -57,7 +55,7 @@ func RESTClientFor(config *RESTClient) (*RESTClient, error) {
 		lifeCycleUUID:  config.lifeCycleUUID,
 		auth:           config.auth,
 		headers:        config.headers,
-		client:         httpClient,
+		client:         config.client,
 	}
 	return rest, nil
 }
