@@ -23,8 +23,8 @@ func MachineAPI() {
 		rest.WithCoreAddr("127.0.0.1"),
 		rest.WithCoreListenPort("8090"),
 		rest.WithXForwardedAuthUser(&rest.XForwardedAuthUser{
-			UserId:  "test_user_id",
-			GroupId: "test_group_id",
+			UserID:  "test_user_id",
+			GroupID: "test_group_id",
 			Viewer:  "test_viewer",
 		}),
 	)
@@ -79,8 +79,8 @@ func HostagentAPI() {
 		rest.WithCoreAddr("127.0.0.1"),
 		rest.WithCoreListenPort("8090"),
 		rest.WithXForwardedAuthUser(&rest.XForwardedAuthUser{
-			UserId:  "test_user_id",
-			GroupId: "test_group_id",
+			UserID:  "test_user_id",
+			GroupID: "test_group_id",
 			Viewer:  "test_viewer",
 		}),
 	)
