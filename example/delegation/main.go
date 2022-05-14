@@ -73,7 +73,7 @@ func MachineAPI() {
 
 func HostagentAPI() {
 	logx.Logger()
-	clientset, _ := coresdk.NewClientWithOptions(
+	clientset, err := coresdk.NewClientWithOptions(
 		rest.WithDefaultCoreRESTMode,
 		rest.WithProtocol("http"),
 		rest.WithCoreAddr("127.0.0.1"),
@@ -85,30 +85,15 @@ func HostagentAPI() {
 		}),
 	)
 
-	init, err := clientset.DelegationV1().Hostagent().Init(context.Background(), &delegationv1.CoreHostagent{})
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println(init)
-
-	err = clientset.DelegationV1().Hostagent().Update(context.Background(), &delegationv1.CoreHostagent{
-		ID:   init.ID,
-		Addr: "10.1.40.108:9009",
-	})
-
+	env, err := clientset.DelegationV1().Hostagent().QueryEnv(context.Background())
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	query, err := clientset.DelegationV1().Hostagent().Query(context.Background(), init.ID)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println(query)
+	fmt.Println(env)
 }
