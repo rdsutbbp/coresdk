@@ -5,7 +5,7 @@ import "context"
 type MachineExpansion interface {
 	CheckPortsConflict(ctx context.Context, request *CheckPortsConflictRequest) (*CheckPortsConflictReply, error)
 	ExportPorts()
-	ExecCommand()
+	ExecCommand(ctx context.Context, request *ExecCommandRequest) (*ExecCommandReply, error)
 }
 
 type CheckPortsConflictRequest struct {
@@ -63,7 +63,17 @@ type ExecCommandReply struct {
 	StdErr string `protobuf:"bytes,3,opt,name=StdErr,proto3" json:"StdErr,omitempty"`
 }
 
-func (c *machine) ExecCommand() {
-	//TODO implement me
-	panic("implement me")
+func (c *machine) ExecCommand(ctx context.Context, request *ExecCommandRequest) (*ExecCommandReply, error) {
+	var resp ExecCommandReply
+	err := c.client.Post().
+		SubPath("/gateway/delegation/api/v1/machine/exec/command").
+		Body(request).
+		Do(ctx).
+		Into(&resp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }

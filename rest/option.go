@@ -5,15 +5,12 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/rdsutbbp/logx"
 )
 
 func WithDefaultCoreRESTMode(c *RESTClient) error {
 	if len(os.Args) < 5 {
 		return errors.New("args count error")
 	}
-	logx.Infof("os.Args is [%v]", os.Args)
 	// set default headers
 	headers := make(map[string][]string)
 	headers["Content-Type"] = []string{"application/json"}
