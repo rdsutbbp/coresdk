@@ -11,13 +11,10 @@ import (
 	delegationv1 "github.com/rdsutbbp/coresdk/typed/delegation/v1"
 )
 
-func main() {
-	logx.Logger()
-	MachineAPI()
-}
+var clientset *coresdk.Clientset
 
-func MachineAPI() {
-	clientset, _ := coresdk.NewClientWithOptions(
+func init() {
+	clientset, _ = coresdk.NewClientWithOptions(
 		rest.WithDefaultCoreRESTMode,
 		rest.WithProtocol("http"),
 		rest.WithCoreAddr("127.0.0.1"),
@@ -28,7 +25,27 @@ func MachineAPI() {
 			Viewer:  "test_viewer",
 		}),
 	)
+}
 
+func main() {
+	logx.Logger()
+	ExecMachineCommandAPI()
+}
+
+func ExecMachineCommandAPI() {
+	command, err := clientset.DelegationV1().Machine().ExecCommand(context.Background(), &delegationv1.ExecCommandRequest{
+		MachineID: 49,
+		Command:   "ls -a",
+		Timeout:   10,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(command)
+}
+
+func MachineAPI() {
 	init, err := clientset.DelegationV1().Machine().Init(context.Background(), &delegationv1.CoreMachine{
 		NickName:     "test_nickname",
 		HostIP:       "test_host_ip",
