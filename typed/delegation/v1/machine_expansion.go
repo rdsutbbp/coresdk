@@ -1,7 +1,9 @@
 package v1
 
+import "context"
+
 type MachineExpansion interface {
-	CheckPortsConflict()
+	CheckPortsConflict(ctx context.Context, request *CheckPortsConflictRequest) (*CheckPortsConflictReply, error)
 	ExportPorts()
 	ExecCommand()
 }
@@ -21,9 +23,19 @@ type PortItem struct {
 	Result bool   `protobuf:"varint,3,opt,name=Result,proto3" json:"Result,omitempty"`
 }
 
-func (c *machine) CheckPortsConflict() {
-	//TODO implement me
-	panic("implement me")
+func (c *machine) CheckPortsConflict(ctx context.Context, request *CheckPortsConflictRequest) (*CheckPortsConflictReply, error) {
+	var resp CheckPortsConflictReply
+	err := c.client.Post().
+		SubPath("/gateway/delegation/api/v1/machine/check/ports").
+		Body(request).
+		Do(ctx).
+		Into(&resp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
 func (c *machine) ExportPorts() {
