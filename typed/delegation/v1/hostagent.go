@@ -14,6 +14,7 @@ type HostagentInterface interface {
 	Init(ctx context.Context, hostagent *CoreHostagent) (*CoreHostagent, error)
 	Update(ctx context.Context, hostagent *CoreHostagent) error
 	Query(ctx context.Context, id int32) (*CoreHostagent, error)
+	Health(ctx context.Context, hostagent *CoreHostagent) (*Str, error)
 	HostagentExpansion
 }
 
@@ -69,6 +70,22 @@ func (c *hostagent) Query(ctx context.Context, id int32) (*CoreHostagent, error)
 	err := c.client.Post().
 		SubPath("/gateway/delegation/api/v1/hostagent/query").
 		Body(struct{ ID int32 }{ID: id}).
+		Do(ctx).
+		Into(&resp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+func (c *hostagent) Health(ctx context.Context, hostagent *CoreHostagent) (*Str, error) {
+	var resp Str
+
+	err := c.client.Post().
+		SubPath("/gateway/delegation/api/v1/hostagent/health").
+		Body(hostagent).
 		Do(ctx).
 		Into(&resp)
 

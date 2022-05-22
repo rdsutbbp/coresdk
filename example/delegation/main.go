@@ -19,6 +19,7 @@ func init() {
 		rest.WithProtocol("http"),
 		rest.WithCoreAddr("127.0.0.1"),
 		rest.WithCoreListenPort("8090"),
+		rest.WithDelegationUUID("colocationv1_0_20"),
 		rest.WithXForwardedAuthUser(&rest.XForwardedAuthUser{
 			UserID:  "test_user_id",
 			GroupID: "test_group_id",
